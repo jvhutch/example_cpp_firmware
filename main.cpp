@@ -103,13 +103,35 @@ extern "C" void gpio_set_led(bool on) {
 }
 
 /*
- * Crude bare-metal delay.
+ * ARMv7-A generic timer helpers.
  *
- * This is not a real millisecond timer. It is just a busy-loop delay,
- * which is acceptable for a first QEMU bare-metal demonstration.
+ * QEMU virt with Cortex-A15 exposes the architected generic timer via
+ * system registers. This gives us hardware-timed delays in real units
+ * instead of host-speed-dependent busy-loop cycle guesses.
  */
-extern "C" void delay_cycles(uint32_t count) {
-    while (count-- != 0U) {
+static inline uint32_t arch_timer_freq_hz(void) {
+    uint32_t freq;
+    asm volatile("mrc p15, 0, %0, c14, c0, 0" : "=r"(freq));
+    return freq;
+}
+
+static inline uint64_t arch_timer_count(void) {
+    uint32_t lo;
+    uint32_t hi;
+    asm volatile("mrrc p15, 0, %0, %1, c14" : "=r"(lo), "=r"(hi));
+    return (static_cast<uint64_t>(hi) << 32) | static_cast<uint64_t>(lo);
+}
+
+extern "C" void delay_ms(uint32_t ms) {
+    if (ms == 0U) {
+        return;
+    }
+
+    const uint64_t freq = static_cast<uint64_t>(arch_timer_freq_hz());
+    const uint64_t ticks_to_wait = (freq * static_cast<uint64_t>(ms)) / 1000ULL;
+    const uint64_t start = arch_timer_count();
+
+    while ((arch_timer_count() - start) < ticks_to_wait) {
         asm volatile("nop");
     }
 }
@@ -186,10 +208,7 @@ public:
         while (true) {
             blinker_.toggle();
 
-            /*
-             * Tune this value depending on host speed and QEMU settings.
-             */
-            delay_cycles(5000000U);
+            delay_ms(500U);
         }
     }
 

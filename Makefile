@@ -36,6 +36,8 @@ LDFLAGS := \
 	-Wl,--gc-sections \
 	-Wl,-Map=$(TARGET).map
 
+LDLIBS := -lgcc
+
 OBJS := startup.o main.o
 
 all: $(TARGET).elf $(TARGET).bin size
@@ -47,7 +49,7 @@ main.o: main.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(TARGET).elf: $(OBJS) linker.ld
-	$(LD) $(LDFLAGS) $(OBJS) -o $@
+	$(LD) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@

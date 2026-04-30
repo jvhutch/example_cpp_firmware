@@ -25,30 +25,27 @@
 
 class Logger {
 public:
-    void write(const char *msg) {
+    static void write(const char *msg) {
         if (msg == nullptr) {
             return;
         }
-
-        size_t len = 0;
-        while (msg[len] != '\0') {
-            ++len;
-        }
-
-        uart_write(msg, len);
+        uart_write(msg, str_len(msg));
     }
 
-    void write_line(const char *msg) {
+    static void write_line(const char *msg) {
         if (msg == nullptr) {
             return;
         }
+        uart_write_line(msg, str_len(msg));
+    }
 
+private:
+    static size_t str_len(const char *s) {
         size_t len = 0;
-        while (msg[len] != '\0') {
+        while (s[len] != '\0') {
             ++len;
         }
-
-        uart_write_line(msg, len);
+        return len;
     }
 };
 
@@ -58,23 +55,20 @@ public:
 
 class LedBlinker {
 public:
-    explicit LedBlinker(Logger &logger)
-        : logger_(logger),
-          led_on_(false) {}
+    LedBlinker() : led_on_(false) {}
 
     void toggle() {
         led_on_ = next_led_state(led_on_);
         gpio_set_led(led_on_);
 
         if (led_on_) {
-            logger_.write_line("LED ON");
+            Logger::write_line("LED ON");
         } else {
-            logger_.write_line("LED OFF");
+            Logger::write_line("LED OFF");
         }
     }
 
 private:
-    Logger &logger_;
     bool led_on_;
 };
 
@@ -84,14 +78,10 @@ private:
 
 class Application {
 public:
-    Application()
-        : logger_(),
-          blinker_(logger_) {}
-
     void init() {
-        logger_.write_line("");
-        logger_.write_line("Bare-metal C++ application started on QEMU");
-        logger_.write_line("Output is using the emulated PL011 UART");
+        Logger::write_line("");
+        Logger::write_line("Bare-metal C++ application started on QEMU");
+        Logger::write_line("Output is using the emulated PL011 UART");
         gpio_set_led(false);
     }
 
@@ -104,7 +94,6 @@ public:
     }
 
 private:
-    Logger logger_;
     LedBlinker blinker_;
 };
 
@@ -129,7 +118,7 @@ extern "C" void kernel_main(void) {
  *
  * Because this is freestanding bare-metal C++, there is no normal hosted
  * runtime. These handlers avoid unresolved references if the compiler emits
- * calls for pure virtual handling or stack protector failure.
+ * calls for pure virtual handling.
  */
 
 extern "C" void __cxa_pure_virtual(void) {
@@ -138,8 +127,4 @@ extern "C" void __cxa_pure_virtual(void) {
     }
 }
 
-extern "C" void __stack_chk_fail(void) {
-    while (true) {
-        /* trap */
-    }
-}
+

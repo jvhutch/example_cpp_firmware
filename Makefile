@@ -11,7 +11,6 @@ INSTRUMENT_FUNCTIONS ?= 0
 INSTRUMENT_EXCLUDE_FILES ?=
 INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?= uart_putc,uart_write,mmio_read32,mmio_write32,delay_ms,arch_timer_count,arch_timer_freq_hz,__cyg_profile_func_enter,__cyg_profile_func_exit
 INSTRUMENT_EXCLUDE_FUNCTIONS ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS)
-# BUILD_DIR ?= build
 
 # Detect operating system
 UNAME_S := $(shell uname -s)
@@ -80,9 +79,6 @@ TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
 OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
-
-# $(BUILD_DIR):
-# 	mkdir -p $@
 
 $(BUILD_DIR): $(MAKEFILE_LIST)
 	mkdir -p $(BUILD_ROOT)

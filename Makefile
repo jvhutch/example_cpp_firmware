@@ -9,7 +9,7 @@ SIZE := $(CROSS_COMPILE)size
 TARGET := firmware
 INSTRUMENT_FUNCTIONS ?= 0
 INSTRUMENT_EXCLUDE_FILES ?=
-INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?= uart_putc,uart_write,mmio_read32,mmio_write32,delay_ms,arch_timer_count,arch_timer_freq_hz,__cyg_profile_func_enter,__cyg_profile_func_exit
+INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?= uart_putc,uart_write,mmio_read32,mmio_write32,delay_ms,arch_timer_count,arch_timer_freq_hz,watchdog_init,watchdog_pet,psci_system_reset,__cyg_profile_func_enter,__cyg_profile_func_exit
 INSTRUMENT_EXCLUDE_FUNCTIONS ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS)
 
 # Detect operating system
@@ -76,7 +76,7 @@ TEST_BUILD_DIR ?= $(BUILD_ROOT)/tests
 TEST_BIN := $(TEST_BUILD_DIR)/unit_tests
 TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/runtime.o
+OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/watchdog.o $(BUILD_DIR)/reset_asm.o $(BUILD_DIR)/runtime.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -133,6 +133,12 @@ $(BUILD_DIR)/tracing_format.o: tracing_format.cpp | $(BUILD_DIR)
 $(BUILD_DIR)/runtime.o: runtime.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/watchdog.o: watchdog.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/reset_asm.o: reset_asm.S | $(BUILD_DIR)
+	$(CC) $(ASFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/tracing.debug.o: tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
@@ -142,7 +148,13 @@ $(BUILD_DIR)/tracing_format.debug.o: tracing_format.cpp | $(BUILD_DIR)
 $(BUILD_DIR)/runtime.debug.o: runtime.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/runtime.debug.o
+$(BUILD_DIR)/watchdog.debug.o: watchdog.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/reset_asm.debug.o: reset_asm.S | $(BUILD_DIR)
+	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
+
+DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/watchdog.debug.o $(BUILD_DIR)/reset_asm.debug.o $(BUILD_DIR)/runtime.debug.o
 
 $(TEST_BUILD_DIR):
 	mkdir -p $@

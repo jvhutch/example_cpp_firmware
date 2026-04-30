@@ -18,6 +18,7 @@
 #include "logic.h"
 #include "timer.h"
 #include "uart.h"
+#include "watchdog.h"
 
 /* ------------------------------------------------------------
  * Small fixed-size logger
@@ -79,6 +80,7 @@ private:
 class Application {
 public:
     void init() {
+        watchdog_init(2000U);
         Logger::write_line("");
         Logger::write_line("Bare-metal C++ application started on QEMU");
         Logger::write_line("Output is using the emulated PL011 UART");
@@ -87,6 +89,7 @@ public:
 
     void run_forever() {
         while (true) {
+            watchdog_pet();
             blinker_.toggle();
 
             delay_ms(500U);

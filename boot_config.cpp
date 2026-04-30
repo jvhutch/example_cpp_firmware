@@ -116,7 +116,7 @@ static AppConfig parse_bootargs_bytes(const char *bootargs, size_t len) {
     size_t pos = 0;
 
     while (pos < len) {
-        while ((pos < len) && (bootargs[pos] == ' ')) {
+        while ((pos < len) && ((bootargs[pos] == ' ') || (bootargs[pos] == '\0'))) {
             ++pos;
         }
         if (pos >= len) {
@@ -124,7 +124,7 @@ static AppConfig parse_bootargs_bytes(const char *bootargs, size_t len) {
         }
 
         const size_t token_start = pos;
-        while ((pos < len) && (bootargs[pos] != ' ')) {
+        while ((pos < len) && (bootargs[pos] != ' ') && (bootargs[pos] != '\0')) {
             ++pos;
         }
         const size_t token_len = pos - token_start;
@@ -135,6 +135,8 @@ static AppConfig parse_bootargs_bytes(const char *bootargs, size_t len) {
             const char *value_start = token + cstr_len("watchdog_timeout_ms") + 1U;
             const size_t value_len = token_len - cstr_len("watchdog_timeout_ms") - 1U;
             if (parse_u32_token(value_start, value_len, parsed)) {
+                cfg.requested_watchdog_timeout_ms = parsed;
+                cfg.has_watchdog_timeout_ms = true;
                 cfg.watchdog_timeout_ms = parsed;
             }
         } else if (match_key_prefix(token, token_len, "loop_delay_ms")) {
@@ -142,7 +144,17 @@ static AppConfig parse_bootargs_bytes(const char *bootargs, size_t len) {
             const char *value_start = token + cstr_len("loop_delay_ms") + 1U;
             const size_t value_len = token_len - cstr_len("loop_delay_ms") - 1U;
             if (parse_u32_token(value_start, value_len, parsed)) {
+                cfg.requested_loop_delay_ms = parsed;
+                cfg.has_loop_delay_ms = true;
                 cfg.loop_delay_ms = parsed;
+            }
+        } else if (match_key_prefix(token, token_len, "force_watchdog_timeout_once")) {
+            uint32_t parsed = 0U;
+            const char *value_start = token + cstr_len("force_watchdog_timeout_once") + 1U;
+            const size_t value_len = token_len - cstr_len("force_watchdog_timeout_once") - 1U;
+            if (parse_u32_token(value_start, value_len, parsed)) {
+                cfg.has_force_watchdog_timeout_once = true;
+                cfg.force_watchdog_timeout_once = (parsed != 0U);
             }
         }
     }
@@ -197,6 +209,12 @@ AppConfig app_config_default() {
     AppConfig cfg{};
     cfg.watchdog_timeout_ms = DEFAULT_WATCHDOG_MS;
     cfg.loop_delay_ms = DEFAULT_LOOP_MS;
+    cfg.requested_watchdog_timeout_ms = DEFAULT_WATCHDOG_MS;
+    cfg.requested_loop_delay_ms = DEFAULT_LOOP_MS;
+    cfg.force_watchdog_timeout_once = false;
+    cfg.has_watchdog_timeout_ms = false;
+    cfg.has_loop_delay_ms = false;
+    cfg.has_force_watchdog_timeout_once = false;
     return cfg;
 }
 

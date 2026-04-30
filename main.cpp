@@ -58,9 +58,22 @@ public:
         Logger::write_line("");
         Logger::write_line("Bare-metal C++ application started on QEMU");
         Logger::write_line("Output is using the emulated PL011 UART");
+        if (config_.has_watchdog_timeout_ms) {
+            Logger::write_key_u32_ms("watchdog_timeout_ms_requested", config_.requested_watchdog_timeout_ms);
+        }
+        if (config_.has_loop_delay_ms) {
+            Logger::write_key_u32_ms("loop_delay_ms_requested", config_.requested_loop_delay_ms);
+        }
         Logger::write_key_u32_ms("watchdog_timeout_ms", config_.watchdog_timeout_ms);
         Logger::write_key_u32_ms("loop_delay_ms", config_.loop_delay_ms);
         gpio_set_led(false);
+
+        if (config_.force_watchdog_timeout_once) {
+            Logger::write_line("watchdog_test=forcing_timeout_on_next_pet");
+            delay_ms(config_.watchdog_timeout_ms + 1U);
+            watchdog_pet();
+            Logger::write_line("watchdog_test=unexpected_no_reset");
+        }
     }
 
     void run_forever() {

@@ -6,6 +6,12 @@
 struct AppConfig {
     uint32_t watchdog_timeout_ms;
     uint32_t loop_delay_ms;
+    uint32_t requested_watchdog_timeout_ms;
+    uint32_t requested_loop_delay_ms;
+    bool force_watchdog_timeout_once;
+    bool has_watchdog_timeout_ms;
+    bool has_loop_delay_ms;
+    bool has_force_watchdog_timeout_once;
 };
 
 AppConfig app_config_default();

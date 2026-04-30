@@ -23,20 +23,17 @@ RAM_DISK_SIZE		?= 4M
 TARGET_ELF := $(BUILD_DIR)/$(TARGET).elf
 TARGET_BIN := $(BUILD_DIR)/$(TARGET).bin
 TARGET_DTB := $(BUILD_DIR)/virt.dtb
+TARGET_RUNTIME_DTB := $(BUILD_DIR)/virt.runtime.dtb
 DTB_LOAD_ADDR ?= 0x44000000
 USE_QEMU_DTB ?= 0
 BOOTARGS ?=
-
-ifneq ($(strip $(BOOTARGS)),)
-QEMU_APPEND_ARG := -append "$(BOOTARGS)"
-else
-QEMU_APPEND_ARG :=
-endif
+QEMU_EXTRA_ARGS ?=
+WATCHDOG_TEST_BOOTARGS ?= watchdog_timeout_ms=2001 loop_delay_ms=2000 force_watchdog_timeout_once=1
 
 ifeq ($(USE_QEMU_DTB),1)
-QEMU_DTB_ARGS := -dtb $(TARGET_DTB) $(QEMU_APPEND_ARG)
+QEMU_DTB_ARGS := -dtb $(TARGET_RUNTIME_DTB) -device loader,file=$(TARGET_RUNTIME_DTB),addr=$(DTB_LOAD_ADDR),force-raw=on
 else
-QEMU_DTB_ARGS := -device loader,file=$(TARGET_DTB),addr=$(DTB_LOAD_ADDR),force-raw=on
+QEMU_DTB_ARGS := -device loader,file=$(TARGET_RUNTIME_DTB),addr=$(DTB_LOAD_ADDR),force-raw=on
 endif
 
 CPUFLAGS := -mcpu=cortex-a15 -marm
@@ -217,10 +214,16 @@ $(TARGET_BIN): $(TARGET_ELF)
 $(TARGET_DTB): | $(BUILD_DIR)
 	qemu-system-arm -M virt,dumpdtb=$@ -display none -nodefaults
 
+$(TARGET_RUNTIME_DTB): $(TARGET_DTB) | $(BUILD_DIR)
+	cp $(TARGET_DTB) $@
+ifneq ($(strip $(BOOTARGS)),)
+	fdtput -t s $@ /chosen bootargs "$(BOOTARGS)"
+endif
+
 size: $(TARGET_ELF)
 	$(SIZE) $<
 
-run: $(TARGET_ELF) $(TARGET_DTB)
+run: $(TARGET_ELF) $(TARGET_RUNTIME_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
@@ -228,9 +231,16 @@ run: $(TARGET_ELF) $(TARGET_DTB)
 		-nographic \
 		-serial mon:stdio \
 		-kernel $(TARGET_ELF) \
-		$(QEMU_DTB_ARGS)
+		$(QEMU_DTB_ARGS) \
+		$(QEMU_EXTRA_ARGS)
 
-debug: $(TARGET_ELF) $(TARGET_DTB)
+run-no-reboot: QEMU_EXTRA_ARGS += -no-reboot
+run-no-reboot: run
+
+watchdog-timeout-test:
+	$(MAKE) run-no-reboot INSTRUMENT_FUNCTIONS=0 BOOTARGS='$(WATCHDOG_TEST_BOOTARGS)'
+
+debug: $(TARGET_ELF) $(TARGET_RUNTIME_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
@@ -243,7 +253,7 @@ debug: $(TARGET_ELF) $(TARGET_DTB)
 
 debug-build: $(BUILD_DIR)/$(TARGET).debug.elf $(BUILD_DIR)/$(TARGET).debug.bin
 
-debug-run: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_DTB)
+debug-run: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_RUNTIME_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
@@ -253,7 +263,7 @@ debug-run: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_DTB)
 		-kernel $< \
 		$(QEMU_DTB_ARGS)
 
-debug-qemu: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_DTB)
+debug-qemu: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_RUNTIME_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
@@ -281,8 +291,13 @@ debug-help:
 	@echo "  2) make debug-qemu   (terminal 1)"
 	@echo "  3) make gdb          (terminal 2)"
 	@echo "DTB/bootargs examples:"
+	@echo "  BOOTARGS are embedded into a runtime DTB under /chosen/bootargs"
 	@echo "  make run"
 	@echo "  make run USE_QEMU_DTB=1 BOOTARGS='watchdog_timeout_ms=100 loop_delay_ms=1000'"
+	@echo "  make run-no-reboot"
+	@echo "Watchdog timeout test (deterministic):"
+	@echo "  make watchdog-timeout-test"
+	@echo "  make watchdog-timeout-test WATCHDOG_TEST_BOOTARGS='watchdog_timeout_ms=120 loop_delay_ms=100 force_watchdog_timeout_once=1'"
 	@echo "Instrumentation examples:"
 	@echo "  make INSTRUMENT_FUNCTIONS=1"
 	@echo "  make INSTRUMENT_FUNCTIONS=1 INSTRUMENT_EXCLUDE_FUNCTIONS="
@@ -292,4 +307,4 @@ debug-help:
 clean:
 	rm -rf $(BUILD_DIR) $(TEST_BUILD_DIR)
 
-.PHONY: all run debug debug-build debug-run debug-qemu gdb debug-help clean size test
+.PHONY: all run run-no-reboot watchdog-timeout-test debug debug-build debug-run debug-qemu gdb debug-help clean size test

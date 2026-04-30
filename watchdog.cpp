@@ -2,6 +2,7 @@
 
 #include "watchdog.h"
 #include "logic.h"
+#include "logger.h"
 
 extern "C" uint32_t __attribute__((no_instrument_function)) arch_timer_freq_hz(void);
 extern "C" uint64_t __attribute__((no_instrument_function)) arch_timer_count(void);
@@ -25,6 +26,7 @@ void __attribute__((no_instrument_function)) watchdog_pet() {
      * that never reaches this function will not be caught here.
      */
     if (now >= s_deadline) {
+        Logger::write_line("watchdog_timeout_warning=deadline_expired_resetting");
         psci_system_reset();
     }
 

@@ -76,7 +76,7 @@ TEST_BUILD_DIR ?= $(BUILD_ROOT)/tests
 TEST_BIN := $(TEST_BUILD_DIR)/unit_tests
 TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o
+OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/runtime.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -130,13 +130,19 @@ $(BUILD_DIR)/uart.debug.o: uart.cpp | $(BUILD_DIR)
 $(BUILD_DIR)/tracing_format.o: tracing_format.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/runtime.o: runtime.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/tracing.debug.o: tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/tracing_format.debug.o: tracing_format.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o
+$(BUILD_DIR)/runtime.debug.o: runtime.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/runtime.debug.o
 
 $(TEST_BUILD_DIR):
 	mkdir -p $@

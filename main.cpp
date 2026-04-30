@@ -112,19 +112,6 @@ extern "C" void kernel_main(void) {
     app.run_forever();
 }
 
-/* ------------------------------------------------------------
- * Minimal C++ runtime hooks
- * ------------------------------------------------------------
- *
- * Because this is freestanding bare-metal C++, there is no normal hosted
- * runtime. These handlers avoid unresolved references if the compiler emits
- * calls for pure virtual handling.
- */
 
-extern "C" void __cxa_pure_virtual(void) {
-    while (true) {
-        /* trap */
-    }
-}
 
 

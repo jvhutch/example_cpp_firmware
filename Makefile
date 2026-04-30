@@ -71,7 +71,13 @@ GDB := $(or \
 	$(shell command -v gdb-multiarch 2>/dev/null), \
 	$(shell command -v gdb 2>/dev/null))
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing.o
+HOST_CXX ?= c++
+HOST_CXXFLAGS ?= -std=c++17 -Wall -Wextra -O0 -g -I.
+TEST_BUILD_DIR ?= $(BUILD_ROOT)/tests
+TEST_BIN := $(TEST_BUILD_DIR)/unit_tests
+TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
+
+OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -92,6 +98,9 @@ $(BUILD_DIR)/startup.o: startup.S | $(BUILD_DIR)
 $(BUILD_DIR)/main.o: main.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/logic.o: logic.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/timer.o: timer.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -110,6 +119,9 @@ $(BUILD_DIR)/startup.debug.o: startup.S | $(BUILD_DIR)
 $(BUILD_DIR)/main.debug.o: main.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/logic.debug.o: logic.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/timer.debug.o: timer.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
@@ -119,10 +131,29 @@ $(BUILD_DIR)/timer_asm.debug.o: timer_asm.S | $(BUILD_DIR)
 $(BUILD_DIR)/uart.debug.o: uart.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/tracing_format.o: tracing_format.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/tracing.debug.o: tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing.debug.o
+$(BUILD_DIR)/tracing_format.debug.o: tracing_format.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o
+
+$(TEST_BUILD_DIR):
+	mkdir -p $@
+
+$(TEST_BIN): tests/test_logic.cpp logic.cpp logic.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_logic.cpp logic.cpp -o $@
+
+$(TEST_TRACING_BIN): tests/test_tracing.cpp tracing_format.cpp tracing_format.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_tracing.cpp tracing_format.cpp -o $@
+
+test: $(TEST_BIN) $(TEST_TRACING_BIN)
+	$(TEST_BIN)
+	$(TEST_TRACING_BIN)
 
 $(BUILD_DIR)/$(TARGET).debug.elf: $(DEBUG_OBJS) linker.ld | $(BUILD_DIR)
 	$(LD) $(LDFLAGS) $(DEBUG_OBJS) $(LDLIBS) -o $@
@@ -202,6 +233,6 @@ debug-help:
 	@echo "  make INSTRUMENT_FUNCTIONS=1 INSTRUMENT_EXCLUDE_FUNCTIONS=uart_putc,uart_write"
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(TEST_BUILD_DIR)
 
-.PHONY: all run debug debug-build debug-run debug-qemu gdb debug-help clean size
+.PHONY: all run debug debug-build debug-run debug-qemu gdb debug-help clean size test

@@ -38,9 +38,14 @@ This project boots without an OS, initializes memory in startup assembly, runs C
 - `timer.h`, `timer.cpp`, `timer_asm.S`:
   - Delay API (`delay_ms`) in C++
   - ARM generic timer register reads implemented in assembly
+- `logic.h`, `logic.cpp`:
+  - Pure logic helpers shared by firmware and host unit tests
+  - LED state transitions and timer conversion math
 - `tracing.cpp`:
   - `__cyg_profile_func_enter` and `__cyg_profile_func_exit`
   - Non-blocking try-lock trace emission to avoid lockup/deadlock
+- `tests/test_logic.cpp`:
+  - Native host unit tests for pure logic helpers
 - `Makefile`:
   - Cross toolchain build rules
   - Run and debug targets
@@ -134,6 +139,22 @@ Print helper text:
 ```bash
 make debug-help
 ```
+
+## Unit Testing
+
+This project includes a native host-side unit test target for pure logic code.
+
+Run tests:
+
+```bash
+make test
+```
+
+Notes:
+
+- Tests are built with host `c++`, not `arm-none-eabi-g++`.
+- The test binary is written to `build/tests/unit_tests`.
+- Firmware-facing code that uses MMIO or startup assembly is validated by QEMU integration runs, while pure logic is validated by `make test`.
 
 ## Runtime Behavior
 

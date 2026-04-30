@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "logic.h"
 #include "timer.h"
 #include "uart.h"
 
@@ -62,7 +63,7 @@ public:
           led_on_(false) {}
 
     void toggle() {
-        led_on_ = !led_on_;
+        led_on_ = next_led_state(led_on_);
         gpio_set_led(led_on_);
 
         if (led_on_) {

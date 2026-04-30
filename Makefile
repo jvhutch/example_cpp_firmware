@@ -71,7 +71,7 @@ GDB := $(or \
 	$(shell command -v gdb-multiarch 2>/dev/null), \
 	$(shell command -v gdb 2>/dev/null))
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/tracing.o
+OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -92,6 +92,12 @@ $(BUILD_DIR)/startup.o: startup.S | $(BUILD_DIR)
 $(BUILD_DIR)/main.o: main.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/timer.o: timer.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/uart.o: uart.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/tracing.o: tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -101,10 +107,16 @@ $(BUILD_DIR)/startup.debug.o: startup.S | $(BUILD_DIR)
 $(BUILD_DIR)/main.debug.o: main.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/timer.debug.o: timer.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/uart.debug.o: uart.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/tracing.debug.o: tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/tracing.debug.o
+DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing.debug.o
 
 $(BUILD_DIR)/$(TARGET).debug.elf: $(DEBUG_OBJS) linker.ld | $(BUILD_DIR)
 	$(LD) $(LDFLAGS) $(DEBUG_OBJS) $(LDLIBS) -o $@

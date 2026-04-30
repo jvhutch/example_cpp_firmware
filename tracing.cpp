@@ -1,17 +1,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "uart.h"
+
 /*
  * Minimal tracing backend for -finstrument-functions hooks.
  *
  * This is intentionally self-contained so it can be moved in/out of builds
  * without coupling to the rest of the application module layout.
  */
-
-extern "C" int uart_write(const char *data, size_t len);
-extern "C" int uart_try_lock(void);
-extern "C" void uart_unlock(void);
-extern "C" int uart_write_unlocked(const char *data, size_t len);
 
 static size_t __attribute__((no_instrument_function)) trace_append_str(char *dst, size_t pos, size_t cap, const char *s) {
     while ((*s != '\0') && (pos < cap)) {

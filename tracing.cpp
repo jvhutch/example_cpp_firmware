@@ -8,49 +8,59 @@
  * without coupling to the rest of the application module layout.
  */
 
-#define UART0_BASE      0x09000000UL
-#define UART_DR_OFFSET  0x000U
-#define UART_FR_OFFSET  0x018U
-#define UART_FR_TXFF    (1U << 5)
+extern "C" int uart_write(const char *data, size_t len);
+extern "C" int uart_try_lock(void);
+extern "C" void uart_unlock(void);
+extern "C" int uart_write_unlocked(const char *data, size_t len);
 
-static void __attribute__((no_instrument_function)) trace_putc_raw(char c) {
-    while ((*(volatile uint32_t *)(UART0_BASE + UART_FR_OFFSET) & UART_FR_TXFF) != 0U) {
-        /* spin */
+static size_t __attribute__((no_instrument_function)) trace_append_str(char *dst, size_t pos, size_t cap, const char *s) {
+    while ((*s != '\0') && (pos < cap)) {
+        dst[pos++] = *s++;
     }
 
-    *(volatile uint32_t *)(UART0_BASE + UART_DR_OFFSET) = static_cast<uint32_t>(c);
+    return pos;
 }
 
-static void __attribute__((no_instrument_function)) trace_puts_raw(const char *s) {
-    while (*s != '\0') {
-        trace_putc_raw(*s++);
-    }
-}
-
-static void __attribute__((no_instrument_function)) trace_put_hex_uintptr(uintptr_t value) {
+static size_t __attribute__((no_instrument_function)) trace_append_hex_uintptr(char *dst, size_t pos, size_t cap, uintptr_t value) {
     static const char hex_digits[] = "0123456789ABCDEF";
 
-    trace_puts_raw("0x");
+    if (pos < cap) {
+        dst[pos++] = '0';
+    }
+    if (pos < cap) {
+        dst[pos++] = 'x';
+    }
+
     for (int shift = static_cast<int>(sizeof(uintptr_t) * 8U) - 4; shift >= 0; shift -= 4) {
         const uint32_t nibble = static_cast<uint32_t>((value >> static_cast<uint32_t>(shift)) & 0xFU);
-        trace_putc_raw(hex_digits[nibble]);
+        if (pos < cap) {
+            dst[pos++] = hex_digits[nibble];
+        }
     }
+
+    return pos;
 }
 
 extern "C" void __attribute__((no_instrument_function))
 __cyg_profile_func_enter(void *this_fn, void *call_site) {
     static volatile bool in_hook = false;
+    char line[96];
+    size_t pos = 0;
 
     if (in_hook) {
         return;
     }
     in_hook = true;
 
-    trace_puts_raw("[I] -> fn=");
-    trace_put_hex_uintptr(reinterpret_cast<uintptr_t>(this_fn));
-    trace_puts_raw(" from=");
-    trace_put_hex_uintptr(reinterpret_cast<uintptr_t>(call_site));
-    trace_puts_raw("\r\n");
+    pos = trace_append_str(line, pos, sizeof(line), "[I] -> fn=");
+    pos = trace_append_hex_uintptr(line, pos, sizeof(line), reinterpret_cast<uintptr_t>(this_fn));
+    pos = trace_append_str(line, pos, sizeof(line), " from=");
+    pos = trace_append_hex_uintptr(line, pos, sizeof(line), reinterpret_cast<uintptr_t>(call_site));
+    pos = trace_append_str(line, pos, sizeof(line), "\n");
+    if (uart_try_lock() != 0) {
+        (void)uart_write_unlocked(line, pos);
+        uart_unlock();
+    }
 
     in_hook = false;
 }
@@ -58,17 +68,23 @@ __cyg_profile_func_enter(void *this_fn, void *call_site) {
 extern "C" void __attribute__((no_instrument_function))
 __cyg_profile_func_exit(void *this_fn, void *call_site) {
     static volatile bool in_hook = false;
+    char line[96];
+    size_t pos = 0;
 
     if (in_hook) {
         return;
     }
     in_hook = true;
 
-    trace_puts_raw("[I] <- fn=");
-    trace_put_hex_uintptr(reinterpret_cast<uintptr_t>(this_fn));
-    trace_puts_raw(" from=");
-    trace_put_hex_uintptr(reinterpret_cast<uintptr_t>(call_site));
-    trace_puts_raw("\r\n");
+    pos = trace_append_str(line, pos, sizeof(line), "[I] <- fn=");
+    pos = trace_append_hex_uintptr(line, pos, sizeof(line), reinterpret_cast<uintptr_t>(this_fn));
+    pos = trace_append_str(line, pos, sizeof(line), " from=");
+    pos = trace_append_hex_uintptr(line, pos, sizeof(line), reinterpret_cast<uintptr_t>(call_site));
+    pos = trace_append_str(line, pos, sizeof(line), "\n");
+    if (uart_try_lock() != 0) {
+        (void)uart_write_unlocked(line, pos);
+        uart_unlock();
+    }
 
     in_hook = false;
 }

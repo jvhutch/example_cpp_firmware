@@ -54,11 +54,49 @@ static inline uint32_t mmio_read32(uintptr_t addr) {
     return *(volatile uint32_t *)addr;
 }
 
+static volatile uint32_t uart_write_lock = 0U;
+
+static inline void __attribute__((no_instrument_function)) uart_lock_acquire(void) {
+    while (__sync_lock_test_and_set(&uart_write_lock, 1U) != 0U) {
+        /* spin */
+    }
+}
+
+static inline void __attribute__((no_instrument_function)) uart_lock_release(void) {
+    __sync_lock_release(&uart_write_lock);
+}
+
+extern "C" void __attribute__((no_instrument_function)) uart_putc(char c);
+
+extern "C" int __attribute__((no_instrument_function)) uart_try_lock(void) {
+    return (__sync_lock_test_and_set(&uart_write_lock, 1U) == 0U) ? 1 : 0;
+}
+
+extern "C" void __attribute__((no_instrument_function)) uart_unlock(void) {
+    uart_lock_release();
+}
+
+extern "C" int __attribute__((no_instrument_function)) uart_write_unlocked(const char *data, size_t len) {
+    if (data == nullptr) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < len; ++i) {
+        if (data[i] == '\n') {
+            uart_putc('\r');
+        }
+
+        uart_putc(data[i]);
+    }
+
+    return static_cast<int>(len);
+}
+
 /* ------------------------------------------------------------
  * C-compatible hardware abstraction layer
  * ------------------------------------------------------------ */
 
-extern "C" void uart_putc(char c) {
+extern "C" void __attribute__((no_instrument_function)) uart_putc(char c) {
     /*
      * Wait while the UART transmit FIFO is full.
      *
@@ -72,10 +110,26 @@ extern "C" void uart_putc(char c) {
     mmio_write32(UART0_BASE + UART_DR_OFFSET, static_cast<uint32_t>(c));
 }
 
-extern "C" int uart_write(const char *data, size_t len) {
+extern "C" int __attribute__((no_instrument_function)) uart_write(const char *data, size_t len) {
     if (data == nullptr) {
         return -1;
     }
+
+    uart_lock_acquire();
+
+    const int written = uart_write_unlocked(data, len);
+
+    uart_lock_release();
+
+    return written;
+}
+
+extern "C" int __attribute__((no_instrument_function)) uart_write_line(const char *data, size_t len) {
+    if (data == nullptr) {
+        return -1;
+    }
+
+    uart_lock_acquire();
 
     for (size_t i = 0; i < len; ++i) {
         if (data[i] == '\n') {
@@ -84,6 +138,11 @@ extern "C" int uart_write(const char *data, size_t len) {
 
         uart_putc(data[i]);
     }
+
+    uart_putc('\r');
+    uart_putc('\n');
+
+    uart_lock_release();
 
     return static_cast<int>(len);
 }
@@ -156,8 +215,16 @@ public:
     }
 
     void write_line(const char *msg) {
-        write(msg);
-        write("\n");
+        if (msg == nullptr) {
+            return;
+        }
+
+        size_t len = 0;
+        while (msg[len] != '\0') {
+            ++len;
+        }
+
+        uart_write_line(msg, len);
     }
 };
 

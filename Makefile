@@ -7,6 +7,10 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 SIZE := $(CROSS_COMPILE)size
 
 TARGET := firmware
+INSTRUMENT_FUNCTIONS ?= 0
+INSTRUMENT_EXCLUDE_FILES ?=
+INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?= uart_putc,uart_write,mmio_read32,mmio_write32,delay_ms,arch_timer_count,arch_timer_freq_hz,__cyg_profile_func_enter,__cyg_profile_func_exit
+INSTRUMENT_EXCLUDE_FUNCTIONS ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS)
 # BUILD_DIR ?= build
 
 # Detect operating system
@@ -37,6 +41,16 @@ CXXFLAGS := \
 	-Wextra \
 	-O2
 
+ifeq ($(INSTRUMENT_FUNCTIONS),1)
+CXXFLAGS += -finstrument-functions
+ifneq ($(strip $(INSTRUMENT_EXCLUDE_FILES)),)
+CXXFLAGS += -finstrument-functions-exclude-file-list=$(INSTRUMENT_EXCLUDE_FILES)
+endif
+ifneq ($(strip $(INSTRUMENT_EXCLUDE_FUNCTIONS)),)
+CXXFLAGS += -finstrument-functions-exclude-function-list=$(INSTRUMENT_EXCLUDE_FUNCTIONS)
+endif
+endif
+
 DEBUG_CXXFLAGS := $(filter-out -O2,$(CXXFLAGS)) -Og -g3 -fno-omit-frame-pointer
 DEBUG_ASFLAGS = $(ASFLAGS) -g3
 
@@ -57,7 +71,7 @@ GDB := $(or \
 	$(shell command -v gdb-multiarch 2>/dev/null), \
 	$(shell command -v gdb 2>/dev/null))
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o
+OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/tracing.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -78,13 +92,19 @@ $(BUILD_DIR)/startup.o: startup.S | $(BUILD_DIR)
 $(BUILD_DIR)/main.o: main.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/tracing.o: tracing.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/startup.debug.o: startup.S | $(BUILD_DIR)
 	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/main.debug.o: main.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o
+$(BUILD_DIR)/tracing.debug.o: tracing.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/tracing.debug.o
 
 $(BUILD_DIR)/$(TARGET).debug.elf: $(DEBUG_OBJS) linker.ld | $(BUILD_DIR)
 	$(LD) $(LDFLAGS) $(DEBUG_OBJS) $(LDLIBS) -o $@
@@ -157,6 +177,11 @@ debug-help:
 	@echo "  1) make debug-build"
 	@echo "  2) make debug-qemu   (terminal 1)"
 	@echo "  3) make gdb          (terminal 2)"
+	@echo "Instrumentation examples:"
+	@echo "  make INSTRUMENT_FUNCTIONS=1"
+	@echo "  make INSTRUMENT_FUNCTIONS=1 INSTRUMENT_EXCLUDE_FUNCTIONS="
+	@echo "  make INSTRUMENT_FUNCTIONS=1 INSTRUMENT_EXCLUDE_FILES=main.cpp"
+	@echo "  make INSTRUMENT_FUNCTIONS=1 INSTRUMENT_EXCLUDE_FUNCTIONS=uart_putc,uart_write"
 
 clean:
 	rm -rf $(BUILD_DIR)

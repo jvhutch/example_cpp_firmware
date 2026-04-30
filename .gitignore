@@ -1,5 +1,1 @@
-firmware.bin
-firmware.elf
-firmware.map
-main.o
-startup.o
+build/

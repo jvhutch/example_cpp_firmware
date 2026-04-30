@@ -24,6 +24,12 @@
 
 _start:
     /*
+     * QEMU/boot protocol places the DTB pointer in r2 on entry.
+     * Preserve it across startup work and pass it to kernel_main(r0).
+     */
+    mov r4, r2
+
+    /*
      * Set up a stack.
      *
      * The linker script defines __stack_top__ near the top of RAM.
@@ -49,12 +55,6 @@ zero_bss:
 call_constructors:
     /*
      * Call global/static C++ constructors.
-     *
-     * This is needed because main.cpp contains:
-     *
-     *   static Application app;
-     *
-     * Without this loop, app's constructor would not run.
      */
     ldr r0, =__init_array_start
     ldr r1, =__init_array_end
@@ -67,6 +67,7 @@ ctor_loop:
     b ctor_loop
 
 call_kernel_main:
+    mov r0, r4
     bl kernel_main
 
 hang:

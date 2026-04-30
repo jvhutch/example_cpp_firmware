@@ -22,6 +22,22 @@ RAM_DISK_SIZE		?= 4M
 
 TARGET_ELF := $(BUILD_DIR)/$(TARGET).elf
 TARGET_BIN := $(BUILD_DIR)/$(TARGET).bin
+TARGET_DTB := $(BUILD_DIR)/virt.dtb
+DTB_LOAD_ADDR ?= 0x44000000
+USE_QEMU_DTB ?= 0
+BOOTARGS ?=
+
+ifneq ($(strip $(BOOTARGS)),)
+QEMU_APPEND_ARG := -append "$(BOOTARGS)"
+else
+QEMU_APPEND_ARG :=
+endif
+
+ifeq ($(USE_QEMU_DTB),1)
+QEMU_DTB_ARGS := -dtb $(TARGET_DTB) $(QEMU_APPEND_ARG)
+else
+QEMU_DTB_ARGS := -device loader,file=$(TARGET_DTB),addr=$(DTB_LOAD_ADDR),force-raw=on
+endif
 
 CPUFLAGS := -mcpu=cortex-a15 -marm
 
@@ -75,8 +91,9 @@ HOST_CXXFLAGS ?= -std=c++17 -Wall -Wextra -O0 -g -I.
 TEST_BUILD_DIR ?= $(BUILD_ROOT)/tests
 TEST_BIN := $(TEST_BUILD_DIR)/unit_tests
 TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
+TEST_BOOT_CONFIG_BIN := $(TEST_BUILD_DIR)/test_boot_config
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/watchdog.o $(BUILD_DIR)/reset_asm.o $(BUILD_DIR)/runtime.o
+OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/watchdog.o $(BUILD_DIR)/boot_config.o $(BUILD_DIR)/logger.o $(BUILD_DIR)/reset_asm.o $(BUILD_DIR)/runtime.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -136,6 +153,12 @@ $(BUILD_DIR)/runtime.o: runtime.cpp | $(BUILD_DIR)
 $(BUILD_DIR)/watchdog.o: watchdog.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/boot_config.o: boot_config.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/logger.o: logger.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/reset_asm.o: reset_asm.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
@@ -151,10 +174,16 @@ $(BUILD_DIR)/runtime.debug.o: runtime.cpp | $(BUILD_DIR)
 $(BUILD_DIR)/watchdog.debug.o: watchdog.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/boot_config.debug.o: boot_config.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/logger.debug.o: logger.cpp | $(BUILD_DIR)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/reset_asm.debug.o: reset_asm.S | $(BUILD_DIR)
 	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
 
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/watchdog.debug.o $(BUILD_DIR)/reset_asm.debug.o $(BUILD_DIR)/runtime.debug.o
+DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/watchdog.debug.o $(BUILD_DIR)/boot_config.debug.o $(BUILD_DIR)/logger.debug.o $(BUILD_DIR)/reset_asm.debug.o $(BUILD_DIR)/runtime.debug.o
 
 $(TEST_BUILD_DIR):
 	mkdir -p $@
@@ -165,9 +194,13 @@ $(TEST_BIN): tests/test_logic.cpp logic.cpp logic.h | $(TEST_BUILD_DIR)
 $(TEST_TRACING_BIN): tests/test_tracing.cpp tracing_format.cpp tracing_format.h | $(TEST_BUILD_DIR)
 	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_tracing.cpp tracing_format.cpp -o $@
 
-test: $(TEST_BIN) $(TEST_TRACING_BIN)
+$(TEST_BOOT_CONFIG_BIN): tests/test_boot_config.cpp boot_config.cpp boot_config.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_boot_config.cpp boot_config.cpp -o $@
+
+test: $(TEST_BIN) $(TEST_TRACING_BIN) $(TEST_BOOT_CONFIG_BIN)
 	$(TEST_BIN)
 	$(TEST_TRACING_BIN)
+	$(TEST_BOOT_CONFIG_BIN)
 
 $(BUILD_DIR)/$(TARGET).debug.elf: $(DEBUG_OBJS) linker.ld | $(BUILD_DIR)
 	$(LD) $(LDFLAGS) $(DEBUG_OBJS) $(LDLIBS) -o $@
@@ -181,19 +214,13 @@ $(TARGET_ELF): $(OBJS) linker.ld | $(BUILD_DIR)
 $(TARGET_BIN): $(TARGET_ELF)
 	$(OBJCOPY) -O binary $< $@
 
+$(TARGET_DTB): | $(BUILD_DIR)
+	qemu-system-arm -M virt,dumpdtb=$@ -display none -nodefaults
+
 size: $(TARGET_ELF)
 	$(SIZE) $<
 
-run: $(TARGET_ELF)
-	qemu-system-arm \
-		-M virt \
-		-cpu cortex-a15 \
-		-m 128M \
-		-nographic \
-		-serial mon:stdio \
-		-kernel $(TARGET_ELF)
-
-debug: $(TARGET_ELF)
+run: $(TARGET_ELF) $(TARGET_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
@@ -201,20 +228,22 @@ debug: $(TARGET_ELF)
 		-nographic \
 		-serial mon:stdio \
 		-kernel $(TARGET_ELF) \
-		-S -s
+		$(QEMU_DTB_ARGS)
 
-debug-build: $(BUILD_DIR)/$(TARGET).debug.elf $(BUILD_DIR)/$(TARGET).debug.bin
-
-debug-run: $(BUILD_DIR)/$(TARGET).debug.elf
+debug: $(TARGET_ELF) $(TARGET_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
 		-m 128M \
 		-nographic \
 		-serial mon:stdio \
-		-kernel $<
+		-kernel $(TARGET_ELF) \
+		$(QEMU_DTB_ARGS) \
+		-S -s
 
-debug-qemu: $(BUILD_DIR)/$(TARGET).debug.elf
+debug-build: $(BUILD_DIR)/$(TARGET).debug.elf $(BUILD_DIR)/$(TARGET).debug.bin
+
+debug-run: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_DTB)
 	qemu-system-arm \
 		-M virt \
 		-cpu cortex-a15 \
@@ -222,6 +251,17 @@ debug-qemu: $(BUILD_DIR)/$(TARGET).debug.elf
 		-nographic \
 		-serial mon:stdio \
 		-kernel $< \
+		$(QEMU_DTB_ARGS)
+
+debug-qemu: $(BUILD_DIR)/$(TARGET).debug.elf $(TARGET_DTB)
+	qemu-system-arm \
+		-M virt \
+		-cpu cortex-a15 \
+		-m 128M \
+		-nographic \
+		-serial mon:stdio \
+		-kernel $< \
+		$(QEMU_DTB_ARGS) \
 		-S -s
 
 gdb: $(BUILD_DIR)/$(TARGET).debug.elf
@@ -240,6 +280,9 @@ debug-help:
 	@echo "  1) make debug-build"
 	@echo "  2) make debug-qemu   (terminal 1)"
 	@echo "  3) make gdb          (terminal 2)"
+	@echo "DTB/bootargs examples:"
+	@echo "  make run"
+	@echo "  make run USE_QEMU_DTB=1 BOOTARGS='watchdog_timeout_ms=100 loop_delay_ms=1000'"
 	@echo "Instrumentation examples:"
 	@echo "  make INSTRUMENT_FUNCTIONS=1"
 	@echo "  make INSTRUMENT_FUNCTIONS=1 INSTRUMENT_EXCLUDE_FUNCTIONS="

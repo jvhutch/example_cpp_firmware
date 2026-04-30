@@ -14,41 +14,12 @@
  */
 
 #include <stdint.h>
-#include <stddef.h>
 #include "logic.h"
 #include "timer.h"
 #include "uart.h"
 #include "watchdog.h"
-
-/* ------------------------------------------------------------
- * Small fixed-size logger
- * ------------------------------------------------------------ */
-
-class Logger {
-public:
-    static void write(const char *msg) {
-        if (msg == nullptr) {
-            return;
-        }
-        uart_write(msg, str_len(msg));
-    }
-
-    static void write_line(const char *msg) {
-        if (msg == nullptr) {
-            return;
-        }
-        uart_write_line(msg, str_len(msg));
-    }
-
-private:
-    static size_t str_len(const char *s) {
-        size_t len = 0;
-        while (s[len] != '\0') {
-            ++len;
-        }
-        return len;
-    }
-};
+#include "boot_config.h"
+#include "logger.h"
 
 /* ------------------------------------------------------------
  * LED blinker state machine
@@ -79,11 +50,16 @@ private:
 
 class Application {
 public:
+    explicit Application(const AppConfig &config)
+        : config_(config) {}
+
     void init() {
-        watchdog_init(2000U);
+        watchdog_init(config_.watchdog_timeout_ms);
         Logger::write_line("");
         Logger::write_line("Bare-metal C++ application started on QEMU");
         Logger::write_line("Output is using the emulated PL011 UART");
+        Logger::write_key_u32_ms("watchdog_timeout_ms", config_.watchdog_timeout_ms);
+        Logger::write_key_u32_ms("loop_delay_ms", config_.loop_delay_ms);
         gpio_set_led(false);
     }
 
@@ -92,29 +68,33 @@ public:
             watchdog_pet();
             blinker_.toggle();
 
-            delay_ms(500U);
+            delay_ms(config_.loop_delay_ms);
         }
     }
 
 private:
+    AppConfig config_;
     LedBlinker blinker_;
 };
-
-/* ------------------------------------------------------------
- * Static application instance
- * ------------------------------------------------------------ */
-
-static Application app;
 
 /* ------------------------------------------------------------
  * Called from startup.S after low-level CPU setup.
  * ------------------------------------------------------------ */
 
-extern "C" void kernel_main(void) {
+extern "C" void kernel_main(uint32_t dtb_addr) {
+    const uintptr_t resolved_dtb_addr = dtb_resolve(static_cast<uintptr_t>(dtb_addr));
+
+    Logger::write_hex_u32("dtb_addr", dtb_addr);
+    Logger::write_hex_u32("dtb_addr_resolved", static_cast<uint32_t>(resolved_dtb_addr));
+
+    if (resolved_dtb_addr != static_cast<uintptr_t>(dtb_addr)) {
+        Logger::write_line("dtb_source=fallback_scan");
+    } else {
+        Logger::write_line("dtb_source=boot_register");
+    }
+
+    const AppConfig config = app_config_from_dtb(resolved_dtb_addr);
+    Application app(config);
     app.init();
     app.run_forever();
 }
-
-
-
-

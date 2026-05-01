@@ -2,8 +2,8 @@
 #include <cstring>
 #include <string>
 
-#include "../watchdog.h"
-#include "../logger.h"
+#include "watchdog.h"
+#include "logger.h"
 
 static int tests_failed = 0;
 

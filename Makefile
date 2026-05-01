@@ -7,6 +7,9 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 SIZE := $(CROSS_COMPILE)size
 
 TARGET := firmware
+SRC_DIR := src
+INC_DIR := include
+ARCH_DIR := $(SRC_DIR)/arch/arm
 INSTRUMENT_FUNCTIONS ?= 0
 INSTRUMENT_EXCLUDE_FILES ?= boot_config.cpp,uart.cpp,watchdog.cpp,timer.cpp,tracing.cpp,tracing_format.cpp
 INSTRUMENT_EXCLUDE_FUNCTIONS ?=
@@ -40,6 +43,7 @@ CPUFLAGS := -mcpu=cortex-a15 -marm
 CXXFLAGS := \
 	$(CPUFLAGS) \
 	-std=c++17 \
+	-I$(INC_DIR) \
 	-ffreestanding \
 	-fno-exceptions \
 	-fno-rtti \
@@ -83,7 +87,7 @@ GDB := $(or \
 	$(shell command -v gdb 2>/dev/null))
 
 HOST_CXX ?= c++
-HOST_CXXFLAGS ?= -std=c++17 -Wall -Wextra -O0 -g -I.
+HOST_CXXFLAGS ?= -std=c++17 -Wall -Wextra -O0 -g -I. -I$(INC_DIR)
 TEST_BUILD_DIR ?= $(BUILD_ROOT)/tests
 TEST_BIN := $(TEST_BUILD_DIR)/unit_tests
 TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
@@ -102,82 +106,82 @@ ifeq ($(UNAME_S),Darwin)
 endif
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/startup.o: startup.S | $(BUILD_DIR)
+$(BUILD_DIR)/startup.o: $(ARCH_DIR)/startup.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/main.o: main.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/logic.o: logic.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/logic.o: $(SRC_DIR)/logic.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/timer.o: timer.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/timer.o: $(SRC_DIR)/timer.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/timer_asm.o: timer_asm.S | $(BUILD_DIR)
+$(BUILD_DIR)/timer_asm.o: $(ARCH_DIR)/timer_asm.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/uart.o: uart.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/tracing.o: tracing.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/tracing.o: $(SRC_DIR)/tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/startup.debug.o: startup.S | $(BUILD_DIR)
+$(BUILD_DIR)/startup.debug.o: $(ARCH_DIR)/startup.S | $(BUILD_DIR)
 	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/main.debug.o: main.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/main.debug.o: $(SRC_DIR)/main.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/logic.debug.o: logic.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/logic.debug.o: $(SRC_DIR)/logic.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/timer.debug.o: timer.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/timer.debug.o: $(SRC_DIR)/timer.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/timer_asm.debug.o: timer_asm.S | $(BUILD_DIR)
+$(BUILD_DIR)/timer_asm.debug.o: $(ARCH_DIR)/timer_asm.S | $(BUILD_DIR)
 	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/uart.debug.o: uart.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/uart.debug.o: $(SRC_DIR)/uart.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/tracing_format.o: tracing_format.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/tracing_format.o: $(SRC_DIR)/tracing_format.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/runtime.o: runtime.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/runtime.o: $(SRC_DIR)/runtime.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/watchdog.o: watchdog.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/watchdog.o: $(SRC_DIR)/watchdog.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/boot_config.o: boot_config.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/boot_config.o: $(SRC_DIR)/boot_config.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/logger.o: logger.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/logger.o: $(SRC_DIR)/logger.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/reset_asm.o: reset_asm.S | $(BUILD_DIR)
+$(BUILD_DIR)/reset_asm.o: $(ARCH_DIR)/reset_asm.S | $(BUILD_DIR)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/tracing.debug.o: tracing.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/tracing.debug.o: $(SRC_DIR)/tracing.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/tracing_format.debug.o: tracing_format.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/tracing_format.debug.o: $(SRC_DIR)/tracing_format.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/runtime.debug.o: runtime.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/runtime.debug.o: $(SRC_DIR)/runtime.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/watchdog.debug.o: watchdog.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/watchdog.debug.o: $(SRC_DIR)/watchdog.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/boot_config.debug.o: boot_config.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/boot_config.debug.o: $(SRC_DIR)/boot_config.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/logger.debug.o: logger.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/logger.debug.o: $(SRC_DIR)/logger.cpp | $(BUILD_DIR)
 	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/reset_asm.debug.o: reset_asm.S | $(BUILD_DIR)
+$(BUILD_DIR)/reset_asm.debug.o: $(ARCH_DIR)/reset_asm.S | $(BUILD_DIR)
 	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
 
 DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/watchdog.debug.o $(BUILD_DIR)/boot_config.debug.o $(BUILD_DIR)/logger.debug.o $(BUILD_DIR)/reset_asm.debug.o $(BUILD_DIR)/runtime.debug.o
@@ -185,17 +189,17 @@ DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR
 $(TEST_BUILD_DIR):
 	mkdir -p $@
 
-$(TEST_BIN): tests/test_logic.cpp logic.cpp logic.h | $(TEST_BUILD_DIR)
-	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_logic.cpp logic.cpp -o $@
+$(TEST_BIN): tests/test_logic.cpp $(SRC_DIR)/logic.cpp $(INC_DIR)/logic.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_logic.cpp $(SRC_DIR)/logic.cpp -o $@
 
-$(TEST_TRACING_BIN): tests/test_tracing.cpp tracing_format.cpp tracing_format.h | $(TEST_BUILD_DIR)
-	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_tracing.cpp tracing_format.cpp -o $@
+$(TEST_TRACING_BIN): tests/test_tracing.cpp $(SRC_DIR)/tracing_format.cpp $(INC_DIR)/tracing_format.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_tracing.cpp $(SRC_DIR)/tracing_format.cpp -o $@
 
-$(TEST_BOOT_CONFIG_BIN): tests/test_boot_config.cpp boot_config.cpp boot_config.h | $(TEST_BUILD_DIR)
-	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_boot_config.cpp boot_config.cpp -o $@
+$(TEST_BOOT_CONFIG_BIN): tests/test_boot_config.cpp $(SRC_DIR)/boot_config.cpp $(INC_DIR)/boot_config.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_boot_config.cpp $(SRC_DIR)/boot_config.cpp -o $@
 
-$(TEST_WATCHDOG_BIN): tests/test_watchdog.cpp watchdog.cpp watchdog.h logic.cpp logic.h timer.h logger.h | $(TEST_BUILD_DIR)
-	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_watchdog.cpp watchdog.cpp logic.cpp -o $@
+$(TEST_WATCHDOG_BIN): tests/test_watchdog.cpp $(SRC_DIR)/watchdog.cpp $(INC_DIR)/watchdog.h $(SRC_DIR)/logic.cpp $(INC_DIR)/logic.h $(INC_DIR)/timer.h $(INC_DIR)/logger.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_watchdog.cpp $(SRC_DIR)/watchdog.cpp $(SRC_DIR)/logic.cpp -o $@
 
 test: $(TEST_BIN) $(TEST_TRACING_BIN) $(TEST_BOOT_CONFIG_BIN) $(TEST_WATCHDOG_BIN)
 	$(TEST_BIN)

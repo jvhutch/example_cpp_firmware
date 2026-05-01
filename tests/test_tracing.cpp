@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstring>
 
-#include "../tracing_format.h"
+#include "tracing_format.h"
 
 static int tests_failed = 0;
 

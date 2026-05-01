@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../logic.h"
+#include "logic.h"
 
 static int tests_failed = 0;
 

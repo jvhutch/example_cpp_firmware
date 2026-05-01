@@ -16,11 +16,11 @@ This project boots without an OS, initializes memory in startup assembly, runs C
 
 ## Repository Layout
 
-- `main.cpp`:
+- `src/main.cpp`:
   - Application classes and control flow
   - `kernel_main` entry point invoked by startup code
   - Minimal runtime trap hooks (`__cxa_pure_virtual`, `__stack_chk_fail`)
-- `startup.S`:
+- `src/arch/arm/startup.S`:
   - Reset/start entry (`_start`)
   - Stack setup
   - `.bss` zeroing
@@ -30,18 +30,18 @@ This project boots without an OS, initializes memory in startup assembly, runs C
   - Memory layout for QEMU virt RAM
   - Section placement (`.text`, `.rodata`, `.init_array`, `.data`, `.bss`)
   - Symbols used by startup code
-- `uart.h`, `uart.cpp`:
+- `include/uart.h`, `src/uart.cpp`:
   - PL011 MMIO UART backend
   - Locking primitives for serialized output
   - Locked and unlocked write paths
   - Simulated GPIO LED output over UART
-- `timer.h`, `timer.cpp`, `timer_asm.S`:
+- `include/timer.h`, `src/timer.cpp`, `src/arch/arm/timer_asm.S`:
   - Delay API (`delay_ms`) in C++
   - ARM generic timer register reads implemented in assembly
-- `logic.h`, `logic.cpp`:
+- `include/logic.h`, `src/logic.cpp`:
   - Pure logic helpers shared by firmware and host unit tests
   - LED state transitions and timer conversion math
-- `tracing.cpp`:
+- `src/tracing.cpp`:
   - `__cyg_profile_func_enter` and `__cyg_profile_func_exit`
   - Non-blocking try-lock trace emission to avoid lockup/deadlock
 - `tests/test_logic.cpp`:
@@ -102,7 +102,7 @@ make run INSTRUMENT_FUNCTIONS=1
 
 Key points:
 
-- Instrumentation hooks are implemented in `tracing.cpp`.
+- Instrumentation hooks are implemented in `src/tracing.cpp`.
 - Trace output uses `uart_try_lock` and drops a trace line if the lock is not immediately available.
 - This design avoids blocking from hook context and prevents startup/reentrancy lockups.
 

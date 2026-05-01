@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../boot_config.h"
+#include "boot_config.h"
 
 static int tests_failed = 0;
 

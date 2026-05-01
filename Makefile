@@ -102,14 +102,14 @@ OBJS := \
 	$(OBJ_SRC)/main.o \
 	$(OBJ_SRC)/logic.o \
 	$(OBJ_SRC)/timer.o \
-	$(OBJ_ARCH)/timer_asm.o \
+	$(OBJ_ARCH)/timer.o \
 	$(OBJ_SRC)/uart.o \
 	$(OBJ_SRC)/tracing_format.o \
 	$(OBJ_SRC)/tracing.o \
 	$(OBJ_SRC)/watchdog.o \
 	$(OBJ_SRC)/boot_config.o \
 	$(OBJ_SRC)/logger.o \
-	$(OBJ_ARCH)/reset_asm.o \
+	$(OBJ_ARCH)/reset.o \
 	$(OBJ_SRC)/runtime.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
@@ -143,14 +143,14 @@ DEBUG_OBJS := \
 	$(OBJ_SRC)/main.debug.o \
 	$(OBJ_SRC)/logic.debug.o \
 	$(OBJ_SRC)/timer.debug.o \
-	$(OBJ_ARCH)/timer_asm.debug.o \
+	$(OBJ_ARCH)/timer.debug.o \
 	$(OBJ_SRC)/uart.debug.o \
 	$(OBJ_SRC)/tracing_format.debug.o \
 	$(OBJ_SRC)/tracing.debug.o \
 	$(OBJ_SRC)/watchdog.debug.o \
 	$(OBJ_SRC)/boot_config.debug.o \
 	$(OBJ_SRC)/logger.debug.o \
-	$(OBJ_ARCH)/reset_asm.debug.o \
+	$(OBJ_ARCH)/reset.debug.o \
 	$(OBJ_SRC)/runtime.debug.o
 
 $(TEST_BUILD_DIR):

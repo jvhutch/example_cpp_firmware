@@ -35,7 +35,7 @@ This project boots without an OS, initializes memory in startup assembly, runs C
   - Locking primitives for serialized output
   - Locked and unlocked write paths
   - Simulated GPIO LED output over UART
-- `include/timer.h`, `src/timer.cpp`, `src/arch/arm/timer_asm.S`:
+- `include/timer.h`, `src/timer.cpp`, `src/arch/arm/timer.S`:
   - Delay API (`delay_ms`) in C++
   - ARM generic timer register reads implemented in assembly
 - `include/logic.h`, `src/logic.cpp`:

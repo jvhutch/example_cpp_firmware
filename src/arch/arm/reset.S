@@ -1,5 +1,5 @@
 /*
- * reset_asm.S
+ * reset.S
  *
  * System reset via PSCI SYSTEM_RESET (function ID 0x84000009).
  *

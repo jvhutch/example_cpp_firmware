@@ -1,5 +1,5 @@
 /*
- * timer_asm.S
+ * timer.S
  *
  * ARMv7-A generic timer accessors implemented in assembly.
  */

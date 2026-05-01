@@ -315,4 +315,11 @@ debug-help:
 clean:
 	rm -rf $(BUILD_DIR) $(TEST_BUILD_DIR)
 
-.PHONY: all run run-no-reboot watchdog-timeout-test debug debug-build debug-run debug-qemu gdb debug-help clean size test
+distclean: clean ## Remove outputs and unmount temp filesystem on macOS
+ifeq ($(UNAME_S),Darwin)
+	mount -t tmpfs | grep -q $(BUILD_ROOT) && diskutil umount force $(BUILD_ROOT) || true
+else
+	rmdir -p $(BUILD_DIR)
+endif
+
+.PHONY: all run run-no-reboot watchdog-timeout-test debug debug-build debug-run debug-qemu gdb debug-help clean distclean size test

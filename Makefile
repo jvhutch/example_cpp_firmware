@@ -94,7 +94,23 @@ TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
 TEST_BOOT_CONFIG_BIN := $(TEST_BUILD_DIR)/test_boot_config
 TEST_WATCHDOG_BIN := $(TEST_BUILD_DIR)/test_watchdog
 
-OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/watchdog.o $(BUILD_DIR)/boot_config.o $(BUILD_DIR)/logger.o $(BUILD_DIR)/reset_asm.o $(BUILD_DIR)/runtime.o
+OBJ_SRC  := $(BUILD_DIR)/src
+OBJ_ARCH := $(BUILD_DIR)/arch/arm
+
+OBJS := \
+	$(OBJ_ARCH)/startup.o \
+	$(OBJ_SRC)/main.o \
+	$(OBJ_SRC)/logic.o \
+	$(OBJ_SRC)/timer.o \
+	$(OBJ_ARCH)/timer_asm.o \
+	$(OBJ_SRC)/uart.o \
+	$(OBJ_SRC)/tracing_format.o \
+	$(OBJ_SRC)/tracing.o \
+	$(OBJ_SRC)/watchdog.o \
+	$(OBJ_SRC)/boot_config.o \
+	$(OBJ_SRC)/logger.o \
+	$(OBJ_ARCH)/reset_asm.o \
+	$(OBJ_SRC)/runtime.o
 
 all: $(TARGET_ELF) $(TARGET_BIN) size
 
@@ -106,85 +122,36 @@ ifeq ($(UNAME_S),Darwin)
 endif
 	mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/startup.o: $(ARCH_DIR)/startup.S | $(BUILD_DIR)
+$(OBJ_SRC)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJ_SRC)/%.debug.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
+	mkdir -p $(dir $@)
+	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
+
+$(OBJ_ARCH)/%.o: $(ARCH_DIR)/%.S | $(BUILD_DIR)
+	mkdir -p $(dir $@)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/logic.o: $(SRC_DIR)/logic.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/timer.o: $(SRC_DIR)/timer.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/timer_asm.o: $(ARCH_DIR)/timer_asm.S | $(BUILD_DIR)
-	$(CC) $(ASFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/uart.o: $(SRC_DIR)/uart.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/tracing.o: $(SRC_DIR)/tracing.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/startup.debug.o: $(ARCH_DIR)/startup.S | $(BUILD_DIR)
+$(OBJ_ARCH)/%.debug.o: $(ARCH_DIR)/%.S | $(BUILD_DIR)
+	mkdir -p $(dir $@)
 	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/main.debug.o: $(SRC_DIR)/main.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/logic.debug.o: $(SRC_DIR)/logic.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/timer.debug.o: $(SRC_DIR)/timer.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/timer_asm.debug.o: $(ARCH_DIR)/timer_asm.S | $(BUILD_DIR)
-	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/uart.debug.o: $(SRC_DIR)/uart.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/tracing_format.o: $(SRC_DIR)/tracing_format.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/runtime.o: $(SRC_DIR)/runtime.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/watchdog.o: $(SRC_DIR)/watchdog.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/boot_config.o: $(SRC_DIR)/boot_config.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/logger.o: $(SRC_DIR)/logger.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/reset_asm.o: $(ARCH_DIR)/reset_asm.S | $(BUILD_DIR)
-	$(CC) $(ASFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/tracing.debug.o: $(SRC_DIR)/tracing.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/tracing_format.debug.o: $(SRC_DIR)/tracing_format.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/runtime.debug.o: $(SRC_DIR)/runtime.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/watchdog.debug.o: $(SRC_DIR)/watchdog.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/boot_config.debug.o: $(SRC_DIR)/boot_config.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/logger.debug.o: $(SRC_DIR)/logger.cpp | $(BUILD_DIR)
-	$(CXX) $(DEBUG_CXXFLAGS) -c $< -o $@
-
-$(BUILD_DIR)/reset_asm.debug.o: $(ARCH_DIR)/reset_asm.S | $(BUILD_DIR)
-	$(CC) $(DEBUG_ASFLAGS) -c $< -o $@
-
-DEBUG_OBJS := $(BUILD_DIR)/startup.debug.o $(BUILD_DIR)/main.debug.o $(BUILD_DIR)/logic.debug.o $(BUILD_DIR)/timer.debug.o $(BUILD_DIR)/timer_asm.debug.o $(BUILD_DIR)/uart.debug.o $(BUILD_DIR)/tracing_format.debug.o $(BUILD_DIR)/tracing.debug.o $(BUILD_DIR)/watchdog.debug.o $(BUILD_DIR)/boot_config.debug.o $(BUILD_DIR)/logger.debug.o $(BUILD_DIR)/reset_asm.debug.o $(BUILD_DIR)/runtime.debug.o
+DEBUG_OBJS := \
+	$(OBJ_ARCH)/startup.debug.o \
+	$(OBJ_SRC)/main.debug.o \
+	$(OBJ_SRC)/logic.debug.o \
+	$(OBJ_SRC)/timer.debug.o \
+	$(OBJ_ARCH)/timer_asm.debug.o \
+	$(OBJ_SRC)/uart.debug.o \
+	$(OBJ_SRC)/tracing_format.debug.o \
+	$(OBJ_SRC)/tracing.debug.o \
+	$(OBJ_SRC)/watchdog.debug.o \
+	$(OBJ_SRC)/boot_config.debug.o \
+	$(OBJ_SRC)/logger.debug.o \
+	$(OBJ_ARCH)/reset_asm.debug.o \
+	$(OBJ_SRC)/runtime.debug.o
 
 $(TEST_BUILD_DIR):
 	mkdir -p $@

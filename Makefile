@@ -88,6 +88,7 @@ TEST_BUILD_DIR ?= $(BUILD_ROOT)/tests
 TEST_BIN := $(TEST_BUILD_DIR)/unit_tests
 TEST_TRACING_BIN := $(TEST_BUILD_DIR)/test_tracing
 TEST_BOOT_CONFIG_BIN := $(TEST_BUILD_DIR)/test_boot_config
+TEST_WATCHDOG_BIN := $(TEST_BUILD_DIR)/test_watchdog
 
 OBJS := $(BUILD_DIR)/startup.o $(BUILD_DIR)/main.o $(BUILD_DIR)/logic.o $(BUILD_DIR)/timer.o $(BUILD_DIR)/timer_asm.o $(BUILD_DIR)/uart.o $(BUILD_DIR)/tracing_format.o $(BUILD_DIR)/tracing.o $(BUILD_DIR)/watchdog.o $(BUILD_DIR)/boot_config.o $(BUILD_DIR)/logger.o $(BUILD_DIR)/reset_asm.o $(BUILD_DIR)/runtime.o
 
@@ -193,10 +194,14 @@ $(TEST_TRACING_BIN): tests/test_tracing.cpp tracing_format.cpp tracing_format.h 
 $(TEST_BOOT_CONFIG_BIN): tests/test_boot_config.cpp boot_config.cpp boot_config.h | $(TEST_BUILD_DIR)
 	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_boot_config.cpp boot_config.cpp -o $@
 
-test: $(TEST_BIN) $(TEST_TRACING_BIN) $(TEST_BOOT_CONFIG_BIN)
+$(TEST_WATCHDOG_BIN): tests/test_watchdog.cpp watchdog.cpp watchdog.h logic.cpp logic.h timer.h logger.h | $(TEST_BUILD_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) tests/test_watchdog.cpp watchdog.cpp logic.cpp -o $@
+
+test: $(TEST_BIN) $(TEST_TRACING_BIN) $(TEST_BOOT_CONFIG_BIN) $(TEST_WATCHDOG_BIN)
 	$(TEST_BIN)
 	$(TEST_TRACING_BIN)
 	$(TEST_BOOT_CONFIG_BIN)
+	$(TEST_WATCHDOG_BIN)
 
 $(BUILD_DIR)/$(TARGET).debug.elf: $(DEBUG_OBJS) linker.ld | $(BUILD_DIR)
 	$(LD) $(LDFLAGS) $(DEBUG_OBJS) $(LDLIBS) -o $@

@@ -66,6 +66,24 @@ static void test_force_watchdog_timeout_flag() {
     expect_true(cfg_false.has_force_watchdog_timeout_once, "force timeout flag explicit should persist for zero");
 }
 
+static void test_force_flag_survives_normalization() {
+    const AppConfig cfg = app_config_from_bootargs(
+        "watchdog_timeout_ms=100 loop_delay_ms=1000 force_watchdog_timeout_once=1");
+
+    expect_true(cfg.requested_watchdog_timeout_ms == 100U,
+                "requested watchdog timeout should remain raw input");
+    expect_true(cfg.requested_loop_delay_ms == 1000U,
+                "requested loop delay should remain raw input");
+    expect_true(cfg.watchdog_timeout_ms == 2000U,
+                "effective watchdog timeout should still be normalized");
+    expect_true(cfg.loop_delay_ms == 1000U,
+                "effective loop delay should keep requested value");
+    expect_true(cfg.force_watchdog_timeout_once,
+                "force timeout flag should remain enabled after normalization");
+    expect_true(cfg.has_force_watchdog_timeout_once,
+                "force timeout explicit flag should remain set after normalization");
+}
+
 int main() {
     test_defaults();
     test_parse_values();
@@ -74,6 +92,7 @@ int main() {
     test_requested_values_survive_normalization();
     test_invalid_tokens_ignored();
     test_force_watchdog_timeout_flag();
+    test_force_flag_survives_normalization();
 
     if (tests_failed == 0) {
         std::cout << "All unit tests passed\n";

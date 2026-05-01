@@ -30,3 +30,12 @@ extern "C" void psci_system_reset(void);
 
 void watchdog_init(uint32_t timeout_ms);
 void watchdog_pet();
+
+struct Watchdog {
+    static void __attribute__((no_instrument_function)) init(uint32_t timeout_ms) {
+        watchdog_init(timeout_ms);
+    }
+    static void __attribute__((no_instrument_function)) pet() {
+        watchdog_pet();
+    }
+};

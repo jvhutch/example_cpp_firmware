@@ -8,8 +8,9 @@ SIZE := $(CROSS_COMPILE)size
 
 TARGET := firmware
 INSTRUMENT_FUNCTIONS ?= 0
-INSTRUMENT_EXCLUDE_FILES ?=
-INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?= uart_putc,uart_write,mmio_read32,mmio_write32,delay_ms,arch_timer_count,arch_timer_freq_hz,watchdog_init,watchdog_pet,psci_system_reset,__cyg_profile_func_enter,__cyg_profile_func_exit
+INSTRUMENT_DEFAULT_EXCLUDE_FILES ?= boot_config.cpp,uart.cpp,watchdog.cpp,timer.cpp,tracing.cpp,tracing_format.cpp
+INSTRUMENT_EXCLUDE_FILES ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FILES)
+INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?=
 INSTRUMENT_EXCLUDE_FUNCTIONS ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS)
 
 # Detect operating system

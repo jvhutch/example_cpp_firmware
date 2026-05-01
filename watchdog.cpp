@@ -4,19 +4,19 @@
 #include "logic.h"
 #include "logger.h"
 
-extern "C" uint32_t __attribute__((no_instrument_function)) arch_timer_freq_hz(void);
-extern "C" uint64_t __attribute__((no_instrument_function)) arch_timer_count(void);
+extern "C" uint32_t arch_timer_freq_hz(void);
+extern "C" uint64_t arch_timer_count(void);
 
 static uint64_t s_timeout_ticks = 0U;
 static uint64_t s_deadline      = 0U;
 
-void __attribute__((no_instrument_function)) watchdog_init(uint32_t timeout_ms) {
+void watchdog_init(uint32_t timeout_ms) {
     const uint64_t freq = static_cast<uint64_t>(arch_timer_freq_hz());
     s_timeout_ticks = ticks_from_ms(freq, timeout_ms);
     s_deadline      = arch_timer_count() + s_timeout_ticks;
 }
 
-void __attribute__((no_instrument_function)) watchdog_pet() {
+void watchdog_pet() {
     const uint64_t now = arch_timer_count();
 
     /*

@@ -2,10 +2,10 @@
 
 #include "logic.h"
 
-extern "C" uint32_t __attribute__((no_instrument_function)) arch_timer_freq_hz(void);
-extern "C" uint64_t __attribute__((no_instrument_function)) arch_timer_count(void);
+extern "C" uint32_t arch_timer_freq_hz(void);
+extern "C" uint64_t arch_timer_count(void);
 
-extern "C" void __attribute__((no_instrument_function)) delay_ms(uint32_t ms) {
+extern "C" void delay_ms(uint32_t ms) {
     if (ms == 0U) {
         return;
     }

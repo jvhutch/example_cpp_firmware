@@ -3,8 +3,7 @@
 
 #include "tracing_format.h"
 
-size_t __attribute__((no_instrument_function))
-trace_append_str(char *dst, size_t pos, size_t cap, const char *s) {
+size_t trace_append_str(char *dst, size_t pos, size_t cap, const char *s) {
     while ((*s != '\0') && (pos < cap)) {
         dst[pos++] = *s++;
     }
@@ -12,8 +11,7 @@ trace_append_str(char *dst, size_t pos, size_t cap, const char *s) {
     return pos;
 }
 
-size_t __attribute__((no_instrument_function))
-trace_append_hex_uintptr(char *dst, size_t pos, size_t cap, uintptr_t value) {
+size_t trace_append_hex_uintptr(char *dst, size_t pos, size_t cap, uintptr_t value) {
     static const char hex_digits[] = "0123456789ABCDEF";
 
     if (pos < cap) {

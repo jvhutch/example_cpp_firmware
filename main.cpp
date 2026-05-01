@@ -54,7 +54,7 @@ public:
         : config_(config) {}
 
     void init() {
-        watchdog_init(config_.watchdog_timeout_ms);
+        Watchdog::init(config_.watchdog_timeout_ms);
         Logger::write_line("");
         Logger::write_line("Bare-metal C++ application started on QEMU");
         Logger::write_line("Output is using the emulated PL011 UART");
@@ -71,14 +71,14 @@ public:
         if (config_.force_watchdog_timeout_once) {
             Logger::write_line("watchdog_test=forcing_timeout_on_next_pet");
             delay_ms(config_.watchdog_timeout_ms + 1U);
-            watchdog_pet();
+            Watchdog::pet();
             Logger::write_line("watchdog_test=unexpected_no_reset");
         }
     }
 
     void run_forever() {
         while (true) {
-            watchdog_pet();
+            Watchdog::pet();
             blinker_.toggle();
 
             delay_ms(config_.loop_delay_ms);

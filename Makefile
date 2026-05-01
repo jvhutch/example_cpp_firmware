@@ -8,10 +8,8 @@ SIZE := $(CROSS_COMPILE)size
 
 TARGET := firmware
 INSTRUMENT_FUNCTIONS ?= 0
-INSTRUMENT_DEFAULT_EXCLUDE_FILES ?= boot_config.cpp,uart.cpp,watchdog.cpp,timer.cpp,tracing.cpp,tracing_format.cpp
-INSTRUMENT_EXCLUDE_FILES ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FILES)
-INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS ?=
-INSTRUMENT_EXCLUDE_FUNCTIONS ?= $(INSTRUMENT_DEFAULT_EXCLUDE_FUNCTIONS)
+INSTRUMENT_EXCLUDE_FILES ?= boot_config.cpp,uart.cpp,watchdog.cpp,timer.cpp,tracing.cpp,tracing_format.cpp
+INSTRUMENT_EXCLUDE_FUNCTIONS ?=
 
 # Detect operating system
 UNAME_S := $(shell uname -s)

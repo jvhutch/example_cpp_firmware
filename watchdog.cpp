@@ -3,9 +3,7 @@
 #include "watchdog.h"
 #include "logic.h"
 #include "logger.h"
-
-extern "C" uint32_t arch_timer_freq_hz(void);
-extern "C" uint64_t arch_timer_count(void);
+#include "timer.h"
 
 static uint64_t s_timeout_ticks = 0U;
 static uint64_t s_deadline      = 0U;

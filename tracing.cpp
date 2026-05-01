@@ -11,7 +11,13 @@
  * without coupling to the rest of the application module layout.
  */
 
+/*
+ * Cppcheck is confused by the built-in __cyg_profile_func_enter/exit hooks and thinks they are declared incorrectly. Suppress the warnings about const parameters, which are actually non-const in the built-in hooks.
+ * cppcheck-suppress constParameterPointer
+ */
+
 extern "C" void __attribute__((no_instrument_function))
+// cppcheck-suppress constParameterPointer
 __cyg_profile_func_enter(void *this_fn, void *call_site) {
     static volatile bool in_hook = false;
     char line[96];
@@ -36,6 +42,7 @@ __cyg_profile_func_enter(void *this_fn, void *call_site) {
 }
 
 extern "C" void __attribute__((no_instrument_function))
+// cppcheck-suppress constParameterPointer
 __cyg_profile_func_exit(void *this_fn, void *call_site) {
     static volatile bool in_hook = false;
     char line[96];

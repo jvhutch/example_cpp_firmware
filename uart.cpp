@@ -36,15 +36,15 @@ static inline void uart_lock_release(void) {
     __sync_lock_release(&uart_write_lock);
 }
 
-extern "C" int uart_try_lock(void) {
+int uart_try_lock(void) {
     return (__sync_lock_test_and_set(&uart_write_lock, 1U) == 0U) ? 1 : 0;
 }
 
-extern "C" void uart_unlock(void) {
+void uart_unlock(void) {
     uart_lock_release();
 }
 
-extern "C" int uart_write_unlocked(const char *data, size_t len) {
+int uart_write_unlocked(const char *data, size_t len) {
     if (data == nullptr) {
         return -1;
     }
@@ -64,7 +64,7 @@ extern "C" int uart_write_unlocked(const char *data, size_t len) {
  * C-compatible hardware abstraction layer
  * ------------------------------------------------------------ */
 
-extern "C" void uart_putc(char c) {
+void uart_putc(char c) {
     while ((mmio_read32(UART0_BASE + UART_FR_OFFSET) & UART_FR_TXFF) != 0U) {
         /* spin */
     }
@@ -72,7 +72,7 @@ extern "C" void uart_putc(char c) {
     mmio_write32(UART0_BASE + UART_DR_OFFSET, static_cast<uint32_t>(c));
 }
 
-extern "C" int uart_write(const char *data, size_t len) {
+int uart_write(const char *data, size_t len) {
     if (data == nullptr) {
         return -1;
     }
@@ -86,7 +86,7 @@ extern "C" int uart_write(const char *data, size_t len) {
     return written;
 }
 
-extern "C" int uart_write_line(const char *data, size_t len) {
+int uart_write_line(const char *data, size_t len) {
     if (data == nullptr) {
         return -1;
     }
@@ -109,7 +109,7 @@ extern "C" int uart_write_line(const char *data, size_t len) {
     return static_cast<int>(len);
 }
 
-extern "C" void gpio_set_led(bool on) {
+void gpio_set_led(bool on) {
     if (on) {
         const char msg[] = "[GPIO] simulated LED = 1\n";
         uart_write(msg, sizeof(msg) - 1U);
